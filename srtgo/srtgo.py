@@ -117,10 +117,10 @@ DEFAULT_STATIONS = {
     "KTX": ["서울", "대전", "동대구", "부산"],
 }
 
-# 예약 간격 (평균 간격 (초) = SHAPE * SCALE): gamma distribution (1.25 +/- 0.25 s)
+# 예약 간격 (평균 간격 (초) = SHAPE * SCALE): gamma distribution (2.0 +/- 0.5 s)
 RESERVE_INTERVAL_SHAPE = 4
-RESERVE_INTERVAL_SCALE = 0.25
-RESERVE_INTERVAL_MIN = 0.25
+RESERVE_INTERVAL_SCALE = 0.4
+RESERVE_INTERVAL_MIN = 0.5
 
 WAITING_BAR = ["|", "/", "-", "\\"]
 
@@ -751,8 +751,16 @@ def reserve(rail_type="SRT", debug=False):
             msg = ex.msg
             if "Need to Login" in msg:
                 rail = login(rail_type, debug=debug)
-                if not rail.is_login and not _handle_error(ex):
+                if not rail.logined and not _handle_error(ex):
                     return
+            elif "MACRO" in str(ex.code or "") or "최신 버전" in msg:
+                if debug:
+                    print(
+                        f"\nMACRO 감지: {ex}\nType: {type(ex)}\nCode: {ex.code}"
+                    )
+                print("\n매크로 감지됨. 재로그인 후 재시도합니다...")
+                time.sleep(3)
+                rail = login(rail_type, debug=debug)
             elif not any(
                 err in msg
                 for err in ("Sold out", "잔여석없음", "예약대기자한도수초과")

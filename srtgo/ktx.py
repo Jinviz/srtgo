@@ -22,12 +22,14 @@ from Crypto.Util.Padding import pad
 from datetime import datetime, timedelta
 from functools import reduce
 
+from .dynapath import DynaPathToken
+
 
 # Constants
 EMAIL_REGEX = re.compile(r"[^@]+@[^@]+\.[^@]+")
 PHONE_NUMBER_REGEX = re.compile(r"(\d{3})-(\d{3,4})-(\d{4})")
 
-USER_AGENT = "Dalvik/2.1.0 (Linux; U; Android 14; SM-S912N Build/UP1A.231005.007)"
+USER_AGENT = "Dalvik/2.1.0 (Linux; U; Android 15; SM-S926N Build/AP4A.250205.002)"
 
 DEFAULT_HEADERS = {
     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
@@ -515,7 +517,7 @@ class Korail:
             self._session = requests.session()
         self._session.headers.update(DEFAULT_HEADERS)
         self._device = "AD"
-        self._version = "240531001"
+        self._version = "250601002"
         self._key = "korail1234567890"
         self._idx = None
         self.korail_id = korail_id
@@ -526,12 +528,19 @@ class Korail:
         self.name = None
         self.email = None
         self.phone_number = None
+        self._dynapath = DynaPathToken()
         if auto_login:
             self.login(korail_id, korail_pw)
 
     def _log(self, msg: str) -> None:
         if self.verbose:
             print(f"[*] {msg}")
+
+    def _set_dynapath_token(self):
+        """Generate and set x-dynapath-m-token header for macro-protected requests."""
+        token = self._dynapath.generate()
+        self._session.headers["x-dynapath-m-token"] = token
+        self._log(f"DynaPath token set (len={len(token)})")
 
     def __enc_password(self, password):
         url = API_ENDPOINTS["code"]
@@ -572,9 +581,13 @@ class Korail:
             "txtMemberNo": self.korail_id,
             "txtPwd": self.__enc_password(self.korail_pw),
             "txtInputFlg": txt_input_flg,
+            "checkValidPw": "Y",
+            "custId": "",
+            "etrPath": "",
             "idx": self._idx,
         }
 
+        self._set_dynapath_token()
         r = self._session.post(API_ENDPOINTS["login"], data=data)
         self._log(r.text)
         j = json.loads(r.text)
@@ -650,6 +663,7 @@ class Korail:
             "radJobId": "1",
             "selGoTrain": train_type,
             "txtTrnGpCd": train_type,
+            "txtTrnNo": "",
             "txtGoStart": dep,
             "txtGoEnd": arr,
             "txtGoAbrdDt": date,
@@ -662,14 +676,31 @@ class Korail:
             "txtSeatAttCd_2": "000",
             "txtSeatAttCd_3": "000",
             "txtSeatAttCd_4": "015",
+            "txtJobDv": "",
+            "etrPath": "",
+            "tkDptDt": "",
+            "tkDptTm": "",
+            "tkTrnNo": "",
             "ebizCrossCheck": "N",
-            "srtCheckYn": "N",  # SRT 함께 보기
-            "rtYn": "N",  # 왕복
-            "adjStnScdlOfrFlg": "N",  # 인접역 보기
+            "srtCheckYn": "N",
+            "rtYn": "N",
+            "adjStnScdlOfrFlg": "N",
             "mbCrdNo": self.membership_number,
+            "tkPsrmClCd": "",
+            "tkRcvdAmt": "",
+            "qryDvCd": "",
+            "qryStNo": "",
+            "qryStTrnNo": "",
+            "qryStTrnNo2": "",
+            "pgPrCnt": "",
+            "chtnCnt": "",
+            "chtnRsStnCd1": "",
+            "trnGpCnt": "",
+            "trnGpCd1": "",
         }
 
-        r = self._session.get(API_ENDPOINTS["search_schedule"], params=data)
+        self._set_dynapath_token()
+        r = self._session.post(API_ENDPOINTS["search_schedule"], data=data)
         self._log(r.text)
         j = json.loads(r.text)
 
@@ -757,6 +788,7 @@ class Korail:
         for i, psg in enumerate(passengers, 1):
             data.update(psg.get_dict(i))
 
+        self._set_dynapath_token()
         r = self._session.get(API_ENDPOINTS["reserve"], params=data)
         self._log(r.text)
         j = json.loads(r.text)
