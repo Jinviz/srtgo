@@ -560,7 +560,7 @@ class Korail:
             ).decode("utf-8")
         return False
 
-    def login(self, korail_id=None, korail_pw=None):
+    def login(self, korail_id=None, korail_pw=None, check_valid_pw=True):
         if korail_id:
             self.korail_id = korail_id
         if korail_pw:
@@ -581,7 +581,7 @@ class Korail:
             "txtMemberNo": self.korail_id,
             "txtPwd": self.__enc_password(self.korail_pw),
             "txtInputFlg": txt_input_flg,
-            "checkValidPw": "Y",
+            "checkValidPw": "Y" if check_valid_pw else "N",
             "custId": "",
             "etrPath": "",
             "idx": self._idx,
@@ -591,6 +591,19 @@ class Korail:
         r = self._session.post(API_ENDPOINTS["login"], data=data)
         self._log(r.text)
         j = json.loads(r.text)
+
+        if (
+            check_valid_pw
+            and j.get("strResult") == "SUCC"
+            and j.get("strRedirectUrl")
+            and not j.get("strCustNm")
+        ):
+            # 비밀번호 변경 권장 등의 안내가 걸린 계정은 비밀번호 변경 페이지로
+            # 리다이렉트하는 불완전한 응답(세션 무효)이 돌아온다.
+            # 검사를 건너뛰고 재로그인한다.
+            if j.get("h_msg_txt"):
+                print(f"[안내] {j['h_msg_txt']}")
+            return self.login(check_valid_pw=False)
 
         if j["strResult"] == "SUCC" and j.get("strMbCrdNo"):
             # self._key = j['Key']
