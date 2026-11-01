@@ -517,7 +517,9 @@ class Korail:
             self._session = requests.session()
         self._session.headers.update(DEFAULT_HEADERS)
         self._device = "AD"
-        self._version = "250601002"
+        # Korail API version is separate from the mobile app version.
+        self._version = "250722001"
+        self._app_version = "7.0.10"
         self._key = "korail1234567890"
         self._idx = None
         self.korail_id = korail_id
@@ -577,6 +579,7 @@ class Korail:
         data = {
             "Device": self._device,
             "Version": self._version,
+            "AppVersion": self._app_version,
             "Key": self._key,
             "txtMemberNo": self.korail_id,
             "txtPwd": self.__enc_password(self.korail_pw),
@@ -671,6 +674,7 @@ class Korail:
         data = {
             "Device": self._device,
             "Version": self._version,
+            "AppVersion": self._app_version,
             "Sid": "",
             "txtMenuId": "11",
             "radJobId": "1",
@@ -759,6 +763,7 @@ class Korail:
         data = {
             "Device": self._device,
             "Version": self._version,
+            "AppVersion": self._app_version,
             "Key": self._key,
             "txtMenuId": "11",
             "txtJobId": "1101" if reserving_seat else "1102",
@@ -816,6 +821,7 @@ class Korail:
         data = {
             "Device": self._device,
             "Version": self._version,
+            "AppVersion": self._app_version,
             "Key": self._key,
             "txtDeviceId": "",
             "txtIndex": "1",
@@ -836,6 +842,7 @@ class Korail:
                     data = {
                         "Device": self._device,
                         "Version": self._version,
+            "AppVersion": self._app_version,
                         "Key": self._key,
                         "h_orgtk_wct_no": ticket.sale_info1,
                         "h_orgtk_ret_sale_dt": ticket.sale_info2,
@@ -861,6 +868,7 @@ class Korail:
         data = {
             "Device": self._device,
             "Version": self._version,
+            "AppVersion": self._app_version,
             "Key": self._key,
         }
         r = self._session.get(API_ENDPOINTS["myreservationview"], params=data)
@@ -892,6 +900,7 @@ class Korail:
         data = {
             "Device": self._device,
             "Version": self._version,
+            "AppVersion": self._app_version,
             "Key": self._key,
             "hidPnrNo": rsv_id,
         }
@@ -926,6 +935,7 @@ class Korail:
         data = {
             "Device": self._device,
             "Version": self._version,
+            "AppVersion": self._app_version,
             "Key": self._key,
             "hidPnrNo": rsv.rsv_id,
             "hidWctNo": rsv.wct_no,
@@ -959,6 +969,7 @@ class Korail:
         data = {
             "Device": self._device,
             "Version": self._version,
+            "AppVersion": self._app_version,
             "Key": self._key,
             "txtPnrNo": rsv.rsv_id,
             "txtJrnySqno": rsv.journey_no,
@@ -974,6 +985,7 @@ class Korail:
         data = {
             "Device": self._device,
             "Version": self._version,
+            "AppVersion": self._app_version,
             "Key": self._key,
             "txtPrnNo": ticket.pnr_no,
             "h_orgtk_sale_dt": ticket.sale_info2,
